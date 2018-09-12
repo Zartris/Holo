@@ -367,6 +367,7 @@ GameObject:
   serializedVersion: 6
   m_Component:
   - component: {fileID: 768381278}
+  - component: {fileID: 768381279}
   m_Layer: 0
   m_Name: DialogManager
   m_TagString: Untagged
@@ -387,6 +388,24 @@ Transform:
   m_Father: {fileID: 1662438007}
   m_RootOrder: 1
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+--- !u!114 &768381279
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInternal: {fileID: 0}
+  m_GameObject: {fileID: 768381277}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: b4653b42786ae314ba81901253d921bb, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  _dialogPrefab: {fileID: 114307728967585524, guid: 9cc4f2207ca11de40a50b87ee28fd830,
+    type: 2}
+  _ProgressIndicator: {fileID: 114375667571304406, guid: 8769cb43fa542914f8aaceee4736c815,
+    type: 2}
+  Dialog2Title: Test
+  Dialog2Message: This is a message for dialog 2. Longer messages will be wrapped
+    automatically. However you still need to be aware of overflow.
 --- !u!4 &902043104 stripped
 Transform:
   m_CorrespondingSourceObject: {fileID: 4587520633816736, guid: d29bc40b7f3df26479d6a0aac211c355,
@@ -612,6 +631,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   _dialogPrefab: {fileID: 114307728967585524, guid: 9cc4f2207ca11de40a50b87ee28fd830,
     type: 2}
+  _ProgressIndicator: {fileID: 0}
   Dialog2Title: Four button dialog
   Dialog2Message: This is a message for dialog 2. Longer messages will be wrapped
     automatically. However you still need to be aware of overflow.

@@ -4,7 +4,6 @@
 using System;
 using System.Collections;
 using UnityEngine;
-
 #if !UNITY_EDITOR && UNITY_WSA && !(ENABLE_IL2CPP && NET_STANDARD_2_0)
 using System.Threading.Tasks;
 using Windows.ApplicationModel.Core;
@@ -12,6 +11,7 @@ using Windows.UI.Core;
 using Windows.UI.ViewManagement;
 using Windows.UI.Xaml;
 using Windows.UI.Xaml.Controls;
+
 #endif
 namespace HoloToolkit.Unity
 {
@@ -29,10 +29,7 @@ namespace HoloToolkit.Unity
         {
 #if !UNITY_EDITOR && UNITY_WSA && !(ENABLE_IL2CPP && NET_STANDARD_2_0)
             UnityEngine.WSA.Application.InvokeOnUIThread(
-                () =>
-                {
-                    Full3DViewId = ApplicationView.GetForCurrentView().Id;
-                }, true);
+                () => { Full3DViewId = ApplicationView.GetForCurrentView().Id; }, true);
 #endif
         }
 
@@ -59,8 +56,8 @@ namespace HoloToolkit.Unity
                 }
                 catch (Exception)
                 {
-
                 }
+
                 await ApplicationViewSwitcher.TryShowAsStandaloneAsync(ApplicationViewManager.Full3DViewId).AsTask();
                 view.CoreWindow.Close();
             }
@@ -77,7 +74,8 @@ namespace HoloToolkit.Unity
         /// <param name="xamlPageName"></param>
         /// <param name="callback"></param>
         /// <returns></returns>
-        public IEnumerator OnLaunchXamlView<TReturnValue>(string xamlPageName, Action<TReturnValue> callback, object pageNavigateParameter = null)
+        public IEnumerator OnLaunchXamlView<TReturnValue>(string xamlPageName, Action<TReturnValue> callback,
+            object pageNavigateParameter = null)
         {
             bool isCompleted = false;
 #if !UNITY_EDITOR && UNITY_WSA && !(ENABLE_IL2CPP && NET_STANDARD_2_0)
@@ -94,9 +92,11 @@ namespace HoloToolkit.Unity
                         CallbackReturnValue(null);
                     }
                 }
+
                 newView.CoreWindow.VisibilityChanged += CoreWindow_VisibilityChanged;
                 Frame frame = new Frame();
-                var pageType = Type.GetType(Windows.UI.Xaml.Application.Current.GetType().AssemblyQualifiedName.Replace(".App,", $".{xamlPageName},"));
+                var pageType = Type.GetType(Windows.UI.Xaml.Application.Current.GetType().AssemblyQualifiedName
+                    .Replace(".App,", $".{xamlPageName},"));
                 var appv = ApplicationView.GetForCurrentView();
                 newViewId = appv.Id;
                 var cb = new Action<object>(rval =>
@@ -104,27 +104,24 @@ namespace HoloToolkit.Unity
                     returnValue = rval;
                     isCompleted = true;
                 });
-                frame.Navigate(pageType,pageNavigateParameter);
+                frame.Navigate(pageType, pageNavigateParameter);
                 CallbackDictionary[newViewId] = cb;
                 Window.Current.Content = frame;
                 Window.Current.Activate();
-
             }).AsTask();
             yield return new WaitUntil(() => dispt.IsCompleted || dispt.IsCanceled || dispt.IsFaulted);
             Task viewShownTask = null;
             UnityEngine.WSA.Application.InvokeOnUIThread(
-                () =>
-                {
-                    viewShownTask = ApplicationViewSwitcher.TryShowAsStandaloneAsync(newViewId).AsTask();
-                },
-                    true);
-            yield return new WaitUntil(() => viewShownTask.IsCompleted || viewShownTask.IsCanceled || viewShownTask.IsFaulted);
+                () => { viewShownTask = ApplicationViewSwitcher.TryShowAsStandaloneAsync(newViewId).AsTask(); },
+                true);
+            yield return new WaitUntil(() =>
+                viewShownTask.IsCompleted || viewShownTask.IsCanceled || viewShownTask.IsFaulted);
             yield return new WaitUntil(() => isCompleted);
             try
             {
                 if (returnValue is TReturnValue)
                 {
-                    callback?.Invoke((TReturnValue)returnValue);
+                    callback?.Invoke((TReturnValue) returnValue);
                 }
                 else
                 {

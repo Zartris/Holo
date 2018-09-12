@@ -1,9 +1,11 @@
-﻿using System.Collections;
+﻿using System;
+using System.Collections;
 using System.Collections.Generic;
 using HoloToolkit.Unity.InputModule;
 using HoloToolkit.Unity.Receivers;
 using HoloToolkit.Unity.UX;
 using HoloToolkit.UX.Dialog;
+using HoloToolkit.UX.Progress;
 using UnityEngine;
 
 public class CreateDialog : MonoBehaviour, IInputClickHandler
@@ -22,10 +24,6 @@ public class CreateDialog : MonoBehaviour, IInputClickHandler
 
     public void OnInputClicked(InputClickedEventData eventData)
     {
-        // TEST create_dialog:
-        if (launchedDialog)
-            return;
-        launchedDialog = true;
         CreateDialogElement();
 
         // Disable everything else
@@ -35,6 +33,15 @@ public class CreateDialog : MonoBehaviour, IInputClickHandler
 
     public void CreateLoadingElement()
     {
+
+        ProgressIndicator.Instance.Open(
+            ProgressIndicator.IndicatorStyleEnum.None,
+            ProgressIndicator.ProgressStyleEnum.None,
+            ProgressIndicator.MessageStyleEnum.Visible,
+            LeadInMessage);
+
+        StartCoroutine(LoadOverTime(LoadTextMessage));
+
         /** FOR LOADING LATER!
         while (_dataNotReceived)
         {
@@ -43,13 +50,36 @@ public class CreateDialog : MonoBehaviour, IInputClickHandler
         **/
     }
 
+    public void CreateDialogElement(String title, String message)
+    {
+        Dialog2Title = title;
+        Dialog2Message = message;
+        CreateDialogElement();
+    }
     public void CreateDialogElement()
     {
+        // TEST create_dialog:
+        if (launchedDialog)
+            return;
+        launchedDialog = true;
+
         // The buttons is order by enums so:
         // Lowest enum || 2. lowest
         // 2. highest  || highest
-        DialogButtonType buttons = DialogButtonType.Cancel | DialogButtonType.Close; //| DialogButtonType.Confirm | DialogButtonType.Accept;
+
+        DialogButtonType buttons = DialogButtonType.Cancel | DialogButtonType.Close | DialogButtonType.Confirm | DialogButtonType.Accept;
         StartCoroutine(LaunchDialogOverTime(buttons, Dialog2Title, Dialog2Message));
+    }
+
+    private async void LoadUri()
+    {
+#if ENABLE_WINMD_SUPPORT
+// The URI to launch
+        var uriBing = new Uri(@"http://www.bing.com");
+
+        // Launch the URI
+        var success = await Windows.System.Launcher.LaunchUriAsync(uriBing);
+#endif
     }
 
     protected IEnumerator LaunchDialogOverTime(DialogButtonType buttons, string title, string message)
