@@ -27,9 +27,9 @@ namespace MediaFrameQrProcessing.Processors
 
         protected override bool ProcessFrame(MediaFrameReference frameReference)
         {
-            Debug.WriteLine("Process frame start.");
+   
             this.Result = null;
-
+            UnityEngine.Debug.Log("MFQRP::ProcessFrame:: 1. ProcessFrame start");
             // doc here https://msdn.microsoft.com/en-us/library/windows/apps/xaml/windows.media.capture.frames.videomediaframe.aspx
             // says to dispose this softwarebitmap if you access it.
             using (var bitmap = frameReference.VideoMediaFrame.SoftwareBitmap)
@@ -56,7 +56,7 @@ namespace MediaFrameQrProcessing.Processors
                 }
                 catch
                 {
-                    Debug.WriteLine("Something failed in Process frame");
+                    UnityEngine.Debug.Log("MFQRP::ProcessFrame:: 1.2 something failed");
                 }
             }
 

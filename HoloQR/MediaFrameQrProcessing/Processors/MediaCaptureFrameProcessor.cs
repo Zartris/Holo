@@ -1,5 +1,6 @@
 ﻿using System.Diagnostics;
 using Windows.UI.ViewManagement;
+using MediaFrameQrProcessing.Wrappers;
 
 namespace MediaFrameQrProcessing.Processors
 {
@@ -36,7 +37,9 @@ namespace MediaFrameQrProcessing.Processors
 
         public async Task ProcessFramesAsync(
             TimeSpan? timeout,
-            Action<T> resultCallback = null)
+            Logger logger,
+            Action<T> resultCallback = null
+            )
         {
             // Note: the natural thing to do here is what I used to do which is to create the
             // MediaCapture inside of a using block.
@@ -57,9 +60,11 @@ namespace MediaFrameQrProcessing.Processors
                     var startTime = DateTime.Now;
 
                     this.Result = default(T);
-
+                    logger.log("MFQRP::ProcessFrameAsync:: 1. Task created");
+                    UnityEngine.Debug.Log("MFQRP::ProcessFrameAsync:: 1. Task created");
                     if (this.mediaCapture == null)
                     {
+                        UnityEngine.Debug.Log("MFQRP::ProcessFrameAsync:: 1.1 media Capture was not created");
                         this.mediaCapture = await this.CreateMediaCaptureAsync();
                     }
 
@@ -73,7 +78,7 @@ namespace MediaFrameQrProcessing.Processors
                         bool done = false;
 
                         await frameReader.StartAsync();
-
+                        UnityEngine.Debug.Log("MFQRP::ProcessFrameAsync:: 2. Starting search");
                         while (!done)
                         {
                             using (var frame = frameReader.TryAcquireLatestFrame())
@@ -93,6 +98,7 @@ namespace MediaFrameQrProcessing.Processors
 
                                 if (timedOut && (resultCallback != null))
                                 {
+                                    UnityEngine.Debug.Log("MFQRP::ProcessFrameAsync:: 2.1 timed out");
                                     resultCallback(default(T));
                                 }
 
@@ -120,7 +126,7 @@ namespace MediaFrameQrProcessing.Processors
             await mediaCapture.InitializeAsync(settings);
 
             this.videoDeviceControllerInitialiser?.Invoke(mediaCapture.VideoDeviceController);
-
+            UnityEngine.Debug.Log("MFQRP::CreateMediaCaptureAsync:: 1. MediaCapture is now created");
             return (mediaCapture);
         }
 

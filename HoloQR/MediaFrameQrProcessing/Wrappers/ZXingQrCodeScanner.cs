@@ -10,6 +10,7 @@ namespace MediaFrameQrProcessing.Wrappers
 
     public static class ZXingQrCodeScanner
     {
+        private static Logger logger = new Logger();
         /// <summary>
         /// Brings together the pieces to do a scan for a QR code from the first
         /// camera that it finds on the system. You might have more success/
@@ -28,7 +29,7 @@ namespace MediaFrameQrProcessing.Wrappers
             TimeSpan? timeout)
         {
             string result = null;
-            
+            UnityEngine.Debug.Log("MFQRP::WRAPPER:: 1. ScanFirstCamForQR");
             // Note - I keep this frame processor around which means keeping the
             // underlying MediaCapture around because when I didn't keep it
             // around I ended up with a crash in Windows.Media.dll related
@@ -36,9 +37,9 @@ namespace MediaFrameQrProcessing.Wrappers
             // So...this isn't what I wanted but it seems to work better :-(
             if (frameProcessor == null)
             {
-                Debug.WriteLine("frameProcessor is null");
+                UnityEngine.Debug.Log("MFQRP::WRAPPER:: 1.1 frameProcessor is null");
                 var mediaFrameSourceFinder = new MediaFrameSourceFinder();
-
+                
                 // We want a source of media frame groups which contains a color video
                 // preview (and we'll take the first one).
                 var populated = await mediaFrameSourceFinder.PopulateAsync(
@@ -47,34 +48,39 @@ namespace MediaFrameQrProcessing.Wrappers
 
                 if (populated)
                 {
+                    UnityEngine.Debug.Log("MFQRP::WRAPPER:: 1.2 It is populated");
                     // We'll take the first video capture device.
                     var videoCaptureDevice =
                         await VideoCaptureDeviceFinder.FindFirstOrDefaultAsync();
 
                     if (videoCaptureDevice != null)
                     {
+                        UnityEngine.Debug.Log("MFQRP::WRAPPER:: 1.3 Found first camera");
                         // Make a processor which will pull frames from the camera and run
                         // ZXing over them to look for QR codes.
                         frameProcessor = new QrCaptureFrameProcessor(
                             mediaFrameSourceFinder,
                             videoCaptureDevice,
                             MediaEncodingSubtypes.Bgra8);
-
+                        UnityEngine.Debug.Log("MFQRP::WRAPPER:: 1.4 frameProcessor is set");
                         // Remember to ask for auto-focus on the video capture device.
                         frameProcessor.SetVideoDeviceControllerInitialiser(
                             vd => vd.Focus.TrySetAuto(true));
+                        UnityEngine.Debug.Log("MFQRP::WRAPPER:: 1.1 frameProcessor is set to auto focus");
                     }
                 }
             }
 
             if (frameProcessor != null)
             {
-                Debug.WriteLine("frameProcessor is not null");
+                UnityEngine.Debug.Log("MFQRP::WRAPPER:: 2. frameProcessor is not null");
+                UnityEngine.Debug.Log("MFQRP::WRAPPER:: 2.1 Calling process frame");
                 // Process frames for up to 30 seconds to see if we get any QR codes...
-                await frameProcessor.ProcessFramesAsync(timeout, resultCallback);
-
+                await frameProcessor.ProcessFramesAsync(timeout, logger ,resultCallback);
+                
                 // See what result we got.
                 result = frameProcessor.Result;
+                UnityEngine.Debug.Log("MFQRP::WRAPPER:: 2.2 got result <" + result + ">");
             }
         }
 
