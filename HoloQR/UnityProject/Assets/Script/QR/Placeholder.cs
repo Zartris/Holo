@@ -10,6 +10,7 @@ public class Placeholder : MonoBehaviour
 {
     public Transform TextMeshObject;
     private DateTime _resetTime;
+    private static bool _scanRunning = false;
 
     // it is used but only on the Hololens.
     [UsedImplicitly] private GameObject dialogManager;
@@ -32,7 +33,13 @@ public class Placeholder : MonoBehaviour
             Debug.Log("resetTime:<" +_resetTime+">, now:<" +now+">");
             return;
         }
+        if(_scanRunning)
+        {
+            Debug.Log("A scan is already running");
+            return;
+        }
 
+        _scanRunning = true;
         // Update text:
         this.textMesh.text = "scanning for 30s";
         Debug.Log("OnScan called");
@@ -58,6 +65,9 @@ public class Placeholder : MonoBehaviour
                         }
                         // This is only executed when 
                         // LoadUri();
+                        Debug.Log("2.1 before test");
+                        _scanRunning = false;
+                        Debug.Log("2.2 after test");
                     },
                     false);
             },
