@@ -50,15 +50,17 @@ public class FindQRCodeCV : MonoBehaviour
     // Use this for initialization
     void Start()
     {
-        rightTexture = new Texture2D(640,480, TextureFormat.RGBA32, false);
+        rightTexture = new Texture2D(640, 480, TextureFormat.RGBA32, false);
         leftTexture = new Texture2D(640, 480, TextureFormat.RGBA32, false);
         middleTexture = new Texture2D(100, 100, TextureFormat.RGBA32, false);
         leftObject.GetComponent<Renderer>().material.mainTexture = leftTexture;
         rightObject.GetComponent<Renderer>().material.mainTexture = rightTexture;
         middleObject.GetComponent<Renderer>().material.mainTexture = middleTexture;
-
+        
         // Get first cam in hololens
         _capture = new VideoCapture(0);
+
+
         _rawImage = new Mat();
         // Checking for faults
         if (!_capture.isOpened())
@@ -85,10 +87,12 @@ public class FindQRCodeCV : MonoBehaviour
         {
             return;
         }
-        if(workDone)
+
+        if (workDone)
         {
-            if(found)
+            if (found)
             {
+                Imgproc.cvtColor(_rawImage,_rawImage, Imgproc.COLOR_BGRA2RGBA);
                 Utils.matToTexture2D(_rawImage, rightTexture);
                 Utils.matToTexture2D(traces, leftTexture);
                 Utils.matToTexture2D(qr_raw, middleTexture);
@@ -101,25 +105,23 @@ public class FindQRCodeCV : MonoBehaviour
             workDone = false;
             taskRunning = false;
         }
+
         if (taskRunning)
         {
             return;
         }
 
         taskRunning = true;
-//        notAsync();
+//        workDone = notAsync();
         AsyncImgProcessing(
             result =>
             {
                 UnityEngine.WSA.Application.InvokeOnAppThread(() =>
                     {
-                        Debug.Log("result:::" + result);
                         found = result;
                         workDone = true;
                     },
                     false);
-                
-
             });
 
 
@@ -254,10 +256,11 @@ public class FindQRCodeCV : MonoBehaviour
                     top = outlier; // The obvious choice
 
                     dist = cv_lineEquation(mc[median1], mc[median2],
-                        mc[outlier]); // Get the Perpendicular distance of the outlier from the longest side			
-                    slope = cv_lineSlope(mc[median1], mc[median2],
-                        align); // Also calculate the slope of the longest side
-
+                        mc[outlier]); // Get the Perpendicular distance of the outlier from the longest side	
+                    Tuple<float,Int16> res;
+                    res= cv_lineSlope(mc[median1], mc[median2]); // Also calculate the slope of the longest side
+                    slope = res.Item1;
+                    align = res.Item2;
                     // Now that we have the orientation of the line formed median1 & median2 and we also have the position of the outlier w.r.t. the line
                     // Determine the 'right' and 'bottom' markers
 
@@ -326,7 +329,7 @@ public class FindQRCodeCV : MonoBehaviour
                         cv_updateCornerOr(orientation, tempO,
                             O); // Re-arrange marker corners w.r.t orientation of the QR code
 
-                        bool iflag = getIntersectionPoint(M[1], M[2], O[3], O[2], N);
+                        N = getIntersectionPoint(M[1], M[2], O[3], O[2]);
 
 
                         src_mat.put(0, 0, L[0].x, L[0].y);
@@ -551,9 +554,10 @@ public class FindQRCodeCV : MonoBehaviour
 
             dist = cv_lineEquation(mc[median1], mc[median2],
                 mc[outlier]); // Get the Perpendicular distance of the outlier from the longest side			
-            slope = cv_lineSlope(mc[median1], mc[median2],
-                align); // Also calculate the slope of the longest side
-
+            Tuple<float,Int16> res;
+            res = cv_lineSlope(mc[median1], mc[median2]); // Also calculate the slope of the longest side
+            slope = res.Item1;
+            align = res.Item2;
             // Now that we have the orientation of the line formed median1 & median2 and we also have the position of the outlier w.r.t. the line
             // Determine the 'right' and 'bottom' markers
 
@@ -622,7 +626,7 @@ public class FindQRCodeCV : MonoBehaviour
                 cv_updateCornerOr(orientation, tempO,
                     O); // Re-arrange marker corners w.r.t orientation of the QR code
 
-                bool iflag = getIntersectionPoint(M[1], M[2], O[3], O[2], N);
+                N = getIntersectionPoint(M[1], M[2], O[3], O[2]);
 
 
                 src_mat.put(0, 0, L[0].x, L[0].y);
@@ -699,29 +703,6 @@ public class FindQRCodeCV : MonoBehaviour
                     // Draw the lines used for estimating the 4th Corner of QR Code
                     Imgproc.line(traces, M[1], N, new Scalar(0, 0, 255), 1, 8, 0);
                     Imgproc.line(traces, O[3], N, new Scalar(0, 0, 255), 1, 8, 0);
-
-
-                    //                    // Show the Orientation of the QR Code wrt to 2D Image Space
-                    //                    int fontFace = Core.FONT_HERSHEY_PLAIN;
-                    //
-                    //                    if (orientation == CV_QR_NORTH)
-                    //                    {
-                    //                        putText(traces, "NORTH", Point(20, 30), fontFace, 1, Scalar(0, 255, 0), 1, 8);
-                    //                    }
-                    //                    else if (orientation == CV_QR_EAST)
-                    //                    {
-                    //                        putText(traces, "EAST", Point(20, 30), fontFace, 1, Scalar(0, 255, 0), 1, 8);
-                    //                    }
-                    //                    else if (orientation == CV_QR_SOUTH)
-                    //                    {
-                    //                        putText(traces, "SOUTH", Point(20, 30), fontFace, 1, Scalar(0, 255, 0), 1, 8);
-                    //                    }
-                    //                    else if (orientation == CV_QR_WEST)
-                    //                    {
-                    //                        putText(traces, "WEST", Point(20, 30), fontFace, 1, Scalar(0, 255, 0), 1, 8);
-                    //                    }
-
-                    // Debug Prints
                 }
             }
 
@@ -734,6 +715,30 @@ public class FindQRCodeCV : MonoBehaviour
 
         Debug.Log("end");
         return true;
+    }
+
+
+    /// <summary>
+    /// Releases all resource.
+    /// </summary>
+    private void Dispose()
+    {
+        
+        if ( _capture != null)
+        {
+            _capture.release();
+            _capture.Dispose();
+            _capture = null;
+        }
+
+    }
+
+    /// <summary>
+    /// Raises the destroy event.
+    /// </summary>
+    void OnDestroy()
+    {
+        Dispose();
     }
 
     // =============================== Helping methods ================================
@@ -775,6 +780,10 @@ public class FindQRCodeCV : MonoBehaviour
 
     private bool CheckVideoCapture()
     {
+        if(_capture == null)
+        {
+            _capture = new VideoCapture(0);
+        }
         if (!_capture.isOpened())
         {
             _capture = new VideoCapture(0);
@@ -821,21 +830,20 @@ public class FindQRCodeCV : MonoBehaviour
     // Function: Slope of a line by two Points L and M on it; Slope of line, S = (x1 -x2) / (y1- y2)
     // Description: Function returns the slope of the line formed by given 2 points, the alignement flag
     //	  indicates the line is vertical and the slope is infinity.
-    float cv_lineSlope(Point L, Point M, int alignement)
+    Tuple<float, Int16> cv_lineSlope(Point L, Point M)
     {
+        
         float dx, dy;
         dx = (float) (M.x - L.x);
         dy = (float) (M.y - L.y);
 
         if (dy != 0)
         {
-            alignement = 1;
-            return (dy / dx);
+            return new Tuple<float, Int16>((dy / dx), 1);
         }
         else // Make sure we are not dividing by zero; so use 'alignement' flag
         {
-            alignement = 0;
-            return 0.0f;
+            return new Tuple<float, Int16>(0.0f, 0);
         }
     }
 
@@ -847,6 +855,10 @@ public class FindQRCodeCV : MonoBehaviour
     //	4 regions equal regions using bounding box. Distance algorithm is applied between the centre of bounding box
     //	every contour point in that region, the farthest point is deemed as the vertex of that region. Calculating
     //	for all 4 regions we obtain the 4 corners of the polygon ( - quadrilateral).
+    // tl = top left,
+    // br = button right
+    // w = middle between A and B
+    // x = middle between B and C
     void cv_getVertices(List<MatOfPoint> contours, int c_id, float slope, List<Point> quad)
     {
         Rect box = Imgproc.boundingRect(contours[c_id]);
@@ -858,7 +870,6 @@ public class FindQRCodeCV : MonoBehaviour
         Point X = new Point(B.x, (B.y + C.y) / 2);
         Point Y = new Point((C.x + D.x) / 2, C.y);
         Point Z = new Point(D.x, (D.y + A.y) / 2);
-
 
         Point M0 = new Point();
         Point M1 = new Point();
@@ -904,26 +915,35 @@ public class FindQRCodeCV : MonoBehaviour
         }
         else
         {
-            int halfx = Convert.ToInt32((A.x + B.x) / 2);
-            int halfy = Convert.ToInt32((A.y + D.y) / 2);
-
+            float halfx = Convert.ToInt32((A.x + B.x) / 2);
+            float halfy = Convert.ToInt32((A.y + D.y) / 2);
+            // Cannot use tuples because unity only supports c# v.6
+            Tuple<float,Point> result;
             for (int i = 0; i < contours[c_id].toList().Count; i++)
             {
                 if ((contours[c_id].toList()[i].x < halfx) && (contours[c_id].toList()[i].y <= halfy))
                 {
-                    cv_updateCorner(contours[c_id].toList()[i], C, dmax[2], M0);
+                    result = cv_updateCorner(contours[c_id].toList()[i], C, dmax[2], M0);
+                    dmax[2] = result.Item1;
+                    M0 = result.Item2;
                 }
                 else if ((contours[c_id].toList()[i].x >= halfx) && (contours[c_id].toList()[i].y < halfy))
                 {
-                    cv_updateCorner(contours[c_id].toList()[i], D, dmax[3], M1);
+                    result = cv_updateCorner(contours[c_id].toList()[i], D, dmax[3], M1);
+                    dmax[3] = result.Item1;
+                    M1 = result.Item2;
                 }
                 else if ((contours[c_id].toList()[i].x > halfx) && (contours[c_id].toList()[i].y >= halfy))
                 {
-                    cv_updateCorner(contours[c_id].toList()[i], A, dmax[0], M2);
+                    result = cv_updateCorner(contours[c_id].toList()[i], A, dmax[0], M2);
+                    dmax[0] = result.Item1;
+                    M2 = result.Item2;
                 }
                 else if ((contours[c_id].toList()[i].x <= halfx) && (contours[c_id].toList()[i].y > halfy))
                 {
-                    cv_updateCorner(contours[c_id].toList()[i], B, dmax[1], M3);
+                    result = cv_updateCorner(contours[c_id].toList()[i], B, dmax[1], M3);
+                    dmax[1] = result.Item1;
+                    M3 = result.Item2;
                 }
             }
         }
@@ -936,7 +956,7 @@ public class FindQRCodeCV : MonoBehaviour
 
     // Function: Compare a point if it more far than previously recorded farthest distance
     // Description: Farthest Point detection using reference point and baseline distance
-    void cv_updateCorner(Point P, Point p, float baseline, Point corner)
+    Tuple<float,Point> cv_updateCorner(Point P, Point p, float baseline, Point corner)
     {
         float temp_dist;
         temp_dist = cv_distance(P, p);
@@ -946,6 +966,8 @@ public class FindQRCodeCV : MonoBehaviour
             baseline = temp_dist; // The farthest distance is the new baseline
             corner = P; // P is now the farthest point
         }
+
+        return new Tuple<float, Point>(baseline,corner);
     }
 
     // Function: Sequence the Corners wrt to the orientation of the QR Code
@@ -991,22 +1013,16 @@ public class FindQRCodeCV : MonoBehaviour
     }
 
     // Function: Get the Intersection Point of the lines formed by sets of two points
-    bool getIntersectionPoint(Point a1, Point a2, Point b1, Point b2, Point intersection)
+    Point getIntersectionPoint(Point a1, Point a2, Point b1, Point b2)
     {
         Point p = a1;
         Point q = b1;
         Point r = new Point(a2.x - a1.x, a2.y - a1.y);
         Point s = new Point(b2.x - b1.x, b2.y - b1.y);
 
-        if (cross(r, s) == 0)
-        {
-            return false;
-        }
-
         float t = cross(q - p, s) / cross(r, s);
 
-        intersection = p + t * r;
-        return true;
+        return p + t * r;
     }
 
     float cross(Point v1, Point v2)
