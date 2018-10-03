@@ -37,7 +37,6 @@ namespace MediaFrameQrProcessing.Processors
 
         public async Task ProcessFramesAsync(
             TimeSpan? timeout,
-            Logger logger,
             Action<T> resultCallback = null
             )
         {
@@ -60,7 +59,6 @@ namespace MediaFrameQrProcessing.Processors
                     var startTime = DateTime.Now;
 
                     this.Result = default(T);
-                    logger.log("MFQRP::ProcessFrameAsync:: 1. Task created");
                     UnityEngine.Debug.Log("MFQRP::ProcessFrameAsync:: 1. Task created");
                     if (this.mediaCapture == null)
                     {
@@ -105,8 +103,9 @@ namespace MediaFrameQrProcessing.Processors
                                 done = (this.Result != null) || (timedOut);
                             }
                         }
-
                         await frameReader.StopAsync();
+//                        frameReader.Dispose();
+                        Dispose();
                     }
                 }
             );
@@ -132,6 +131,7 @@ namespace MediaFrameQrProcessing.Processors
 
         public void Dispose()
         {
+            
             if (this.mediaCapture != null)
             {
                 this.mediaCapture.Dispose();

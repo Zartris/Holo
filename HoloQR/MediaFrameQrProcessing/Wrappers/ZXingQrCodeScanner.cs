@@ -10,7 +10,6 @@ namespace MediaFrameQrProcessing.Wrappers
 
     public static class ZXingQrCodeScanner
     {
-        private static Logger logger = new Logger();
         /// <summary>
         /// Brings together the pieces to do a scan for a QR code from the first
         /// camera that it finds on the system. You might have more success/
@@ -76,7 +75,7 @@ namespace MediaFrameQrProcessing.Wrappers
                 UnityEngine.Debug.Log("MFQRP::WRAPPER:: 2. frameProcessor is not null");
                 UnityEngine.Debug.Log("MFQRP::WRAPPER:: 2.1 Calling process frame");
                 // Process frames for up to 30 seconds to see if we get any QR codes...
-                await frameProcessor.ProcessFramesAsync(timeout, logger ,resultCallback);
+                await frameProcessor.ProcessFramesAsync(timeout ,resultCallback);
                 
                 // See what result we got.
                 result = frameProcessor.Result;
