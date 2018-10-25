@@ -156,38 +156,49 @@ public class CreateDialog : MonoBehaviour, IInputClickHandler
 
     protected void OnClosed(DialogResult result)
     {
-        switch (result.Result)
+        var menuManager = GameObject.Find("/Managers/MenuManager");
+        GameObject qrm = GameObject.Find("/Managers/QRManager");
+        Scanner scanner = qrm.GetComponent<Scanner>();
+        if (menuManager)
         {
-            case DialogButtonType.Element3D:
-                break;
-            case DialogButtonType.Accept:
-                break;
-            case DialogButtonType.Alarms:
-                break;
-            case DialogButtonType.Cancel:
-                break;
-            case DialogButtonType.Close:
-                break;
-            case DialogButtonType.Confirm:
-                break;
-            case DialogButtonType.EDoc:
-                var menuManager = GameObject.Find("/Managers/MenuManager");
-                if(menuManager)
+                switch (result.Result)
                 {
-                    var creator = menuManager.GetComponent<CreateListingMenu>();
-                    creator.CreateListingElement();
+                    case DialogButtonType.Element3D:
+                        break;
+                    case DialogButtonType.Accept:
+                        break;
+                    case DialogButtonType.Alarms:
+                        var detailCreator = menuManager.GetComponent<CreateDetailMenu>();
+                        detailCreator.CreateDetailElement();
+                        break;
+                    case DialogButtonType.Cancel:
+                        scanner.dialogClosed();
+                        break;
+                    case DialogButtonType.Close:
+                        scanner.dialogClosed();
+                    break;
+                    case DialogButtonType.Confirm:
+                        break;
+                    case DialogButtonType.EDoc:
+                        var listCreator = menuManager.GetComponent<CreateListingMenu>();
+                        listCreator.CreateListingElement();
+                        break;
+                    case DialogButtonType.No:
+                        scanner.dialogClosed();
+                        break;
+                    case DialogButtonType.None:
+                        break;
+                    case DialogButtonType.OK:
+                        break;
+                    case DialogButtonType.Yes:
+                        break;
+                    default:
+                        break;
                 }
-                break;
-            case DialogButtonType.No:
-                break;
-            case DialogButtonType.None:
-                break;
-            case DialogButtonType.OK:
-                break;
-            case DialogButtonType.Yes:
-                break;
-            default:
-                break;
+        }
+        else
+        {
+            //Some kind of error.
         }
 
         // Result.text = "Dialog result: " + result.Result.ToString();

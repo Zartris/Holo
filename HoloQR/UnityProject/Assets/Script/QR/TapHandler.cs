@@ -3,10 +3,10 @@ using UnityEngine;
 
 public class TapHandler : MonoBehaviour, IInputClickHandler
 {
-    private Placeholder placeholder;
+    private Scanner scanner;
     void Awake()
     {
-        placeholder = GetComponent<Placeholder>();
+        scanner = GetComponent<Scanner>();
     }
 
     private void Start()
@@ -18,7 +18,7 @@ public class TapHandler : MonoBehaviour, IInputClickHandler
     public void OnInputClicked(InputClickedEventData eventData)
     {
         Debug.Log("OnInputClicked AirTap");
-        placeholder.OnScan();
+        scanner.OnScan();
     }
     #endregion IInputClickHandler
 }

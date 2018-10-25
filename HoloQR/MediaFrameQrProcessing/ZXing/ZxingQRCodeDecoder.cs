@@ -19,7 +19,22 @@
 
       barcodeReader.Options.TryHarder = true;
     }
-    public static Result DecodeBufferToQRCode(
+
+      public static Result DecodeBufferToQRCode(
+          byte[] buffer,
+          int width,
+          int height)
+      {
+          var zxingResult = barcodeReader.Decode(
+              buffer,
+              width,
+              height,
+              BitmapFormat.RGB32);
+
+          return (zxingResult);
+      }
+
+        public static Result DecodeBufferToQRCode(
       byte[] buffer,
       int width, 
       int height, 

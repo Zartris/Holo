@@ -1,5 +1,5 @@
 fileFormatVersion: 2
-guid: 1c08375a7c6cf774c85ea491c7a90283
+guid: 18149d5815284e445bb32b1d5fd86000
 PluginImporter:
   externalObjects: {}
   serializedVersion: 2
@@ -99,7 +99,7 @@ PluginImporter:
         DontProcess: true
         PlaceholderPath: 
         SDK: UWP
-        ScriptingBackend: DotNet
+        ScriptingBackend: AnyScriptingBackend
   userData: 
   assetBundleName: 
   assetBundleVariant: 

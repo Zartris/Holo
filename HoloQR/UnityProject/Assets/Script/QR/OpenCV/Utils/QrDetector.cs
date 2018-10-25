@@ -8,10 +8,10 @@ namespace Script.QR.OpenCV.Utils
 {
     public class QrDetector
     {
-        const int FOUND = 0;
-        const int QR = 1;
-        const int TRACES = 2;
-        const int RAW_INPUT = 3;
+        public const int FOUND = 0;
+        public const int QR = 1;
+        public const int TRACES = 2;
+        public const int RAW_INPUT = 3;
 
         const int CV_QR_NORTH = 0;
         const int CV_QR_EAST = 1;
@@ -19,50 +19,25 @@ namespace Script.QR.OpenCV.Utils
         const int CV_QR_WEST = 3;
         const int DBG = 1;
 
-        private Texture2D rightTexture;
-        private Texture2D leftTexture;
-        private Texture2D middleTexture;
-
-        private bool _setupError = false;
-        private int _frameCounter = 0;
-        private VideoCapture _capture;
-        private bool taskRunning = false;
-        private bool workDone = false;
-        private bool found = false;
-
-        // Creation of Intermediate 'Image' Objects required later
-        private Mat gray;
-        private Mat edges;
-        private Mat traces;
-
-        private Mat qr;
-        private Mat qr_raw;
-        private Mat qr_gray;
-        private Mat qr_thres;
-
-        // Variable used
-        int mark, A, B, C, top, right, bottom, median1, median2, outlier, align, orientation;
-        float AB, BC, CA, dist, slope, areat, arear, areab, large, padding;
-
-        public QrDetector()
+        // Function: Process the grayImg:
+        // Finding contours (Squares in the img), and decides from the position between the parent squares if it is a QR
+        // Then we warp it to a QR mat.
+        public Dictionary<int, Mat> detectQR(Mat grayImg, out MatOfRect detectionPositionResult)
         {
-        }
 
-        public Dictionary<int, Mat> detectQR(Mat img)
-        {
-            Mat gray = new Mat(img.size(), CvType.makeType(img.depth(), 1)); // To hold Grayscale Image
-            Mat edges = new Mat(img.size(), CvType.makeType(img.depth(), 1)); // To hold Grayscale Image
-            Mat traces = new Mat(img.size(), CvType.CV_8UC3); // For Debug Visuals
+            bool found = false;
+            detectionPositionResult = new MatOfRect();
+            Mat edges = new Mat(grayImg.rows(), grayImg.cols(), CvType.makeType(grayImg.depth(), 1)); // To hold Grayscale Image
+            Mat traces = new Mat(grayImg.rows(), grayImg.cols(), CvType.CV_8UC3); // For Debug Visuals
 
             // create Mat with 100x100 all zeros
-            qr_raw = new Mat(100, 100, CvType.CV_8UC3, Scalar.all(0));
-            qr = new Mat(100, 100, CvType.CV_8UC3, Scalar.all(0));
-            qr_gray = new Mat(100, 100, CvType.CV_8UC1, Scalar.all(0));
-            qr_thres = new Mat(100, 100, CvType.CV_8UC1, Scalar.all(0));
-
-            Imgproc.cvtColor(img, gray,
-                Imgproc.COLOR_RGB2GRAY); // Convert Image captured from Image Input to GrayScale	
-            Imgproc.Canny(gray, edges, 100, 200, 3,
+            Mat qr_raw = new Mat(100, 100, CvType.CV_8UC3, Scalar.all(0));
+            Mat qr = new Mat(100, 100, CvType.CV_8UC3, Scalar.all(0));
+            Mat qr_gray = new Mat(100, 100, CvType.CV_8UC1, Scalar.all(0));
+            Mat qr_thres = new Mat(120, 120, CvType.CV_8UC1, Scalar.all(0));
+            Mat GBlur = grayImg.clone();
+            Imgproc.GaussianBlur(GBlur, GBlur, new Size(3,3),0);
+            Imgproc.Canny(GBlur, edges, 100, 200, 3,
                 true); // Apply Canny edge detection on the gray image ( Not sure true)
 
 
@@ -70,9 +45,13 @@ namespace Script.QR.OpenCV.Utils
             List<MatOfPoint> contours = new List<MatOfPoint>();
             Mat hierarchy = new Mat();
             Imgproc.findContours(edges, contours, hierarchy, Imgproc.RETR_TREE, Imgproc.CHAIN_APPROX_SIMPLE);
+            if (contours.Count == 0)
+            {
+                Debug.Log("Panic");
+            }
 
-            mark = 0; // Reset all detected marker count for this frame
-
+            var mark = 0;
+            int A = 0, B = 0 , C = 0;
             // Get Moments for all Contours and the mass centers
             List<Moments> mu = new List<Moments>();
             List<Point> mc = new List<Point>();
@@ -101,15 +80,21 @@ namespace Script.QR.OpenCV.Utils
                     int c = 0;
 
                     // Checking if child is the inner contour
-                    while (hierarchy.get(0, k)[3] != -1.0)
+                    // 4 channels (id of next, previous, child, and parent contour)
+                    while (hierarchy.get(0, k)[2] != -1.0)
                     {
-                        k = Convert.ToInt32(hierarchy.get(0, k)[3]);
+                        k = Convert.ToInt32(hierarchy.get(0, k)[2]);
                         c = c + 1;
                     }
 
-                    if (hierarchy.get(0, k)[3] != -1.0)
+                    if (hierarchy.get(0, k)[2] != -1.0)
                     {
                         c = c + 1;
+                    }
+
+                    if (c >= 3)
+                    {
+                        // Debug.Log("C = " + c);
                     }
 
                     if (c >= 5)
@@ -129,10 +114,13 @@ namespace Script.QR.OpenCV.Utils
                 // Determining the 'top' marker
                 // Vertex of the triangle NOT involved in the longest side is the 'outlier'
 
-                AB = cv_distance(mc[A], mc[B]);
-                BC = cv_distance(mc[B], mc[C]);
-                CA = cv_distance(mc[C], mc[A]);
+                var AB = cv_distance(mc[A], mc[B]);
+                var BC = cv_distance(mc[B], mc[C]);
+                var CA = cv_distance(mc[C], mc[A]);
 
+                int outlier;
+                int median1;
+                int median2;
                 if (AB > BC && AB > CA)
                 {
                     outlier = C;
@@ -145,27 +133,32 @@ namespace Script.QR.OpenCV.Utils
                     median1 = A;
                     median2 = C;
                 }
-                else if (BC > AB && BC > CA)
+                else // if (BC > AB && BC > CA)
                 {
                     outlier = A;
                     median1 = B;
                     median2 = C;
                 }
+                
 
-                top = outlier; // The obvious choice
+                var top = outlier;
 
-                dist = cv_lineEquation(mc[median1], mc[median2],
-                    mc[outlier]); // Get the Perpendicular distance of the outlier from the longest side			
-                Tuple<float, Int16> res;
-                res = cv_lineSlope(mc[median1], mc[median2]); // Also calculate the slope of the longest side
-                slope = res.Item1;
-                align = res.Item2;
+                var dist = cv_lineEquation(mc[median1], mc[median2],
+                    mc[outlier]);
+                var res = cv_lineSlope(mc[median1], mc[median2]);
+                var slope = res.Item1;
+                int align = res.Item2;
                 // Now that we have the orientation of the line formed median1 & median2 and we also have the position of the outlier w.r.t. the line
                 // Determine the 'right' and 'bottom' markers
+                int orientation;
+                int bottom;
+                int right;
                 if (align == 0)
                 {
                     bottom = median1;
                     right = median2;
+                    // Orientation is set to north for stadart:
+                    orientation = CV_QR_NORTH;
                 }
                 else if (slope < 0 && dist < 0) // Orientation - North
                 {
@@ -186,7 +179,7 @@ namespace Script.QR.OpenCV.Utils
                     orientation = CV_QR_SOUTH;
                 }
 
-                else if (slope > 0 && dist > 0) // Orientation - West
+                else // if (slope > 0 && dist > 0) // Orientation - West
                 {
                     bottom = median1;
                     right = median2;
@@ -195,8 +188,6 @@ namespace Script.QR.OpenCV.Utils
 
 
                 // To ensure any unintended values do not sneak up when QR code is not present
-                float area_top, area_right, area_bottom;
-
                 if (top < contours.Count && right < contours.Count && bottom < contours.Count &&
                     Imgproc.contourArea(contours[top]) > 10 && Imgproc.contourArea(contours[right]) > 10 &&
                     Imgproc.contourArea(contours[bottom]) > 10)
@@ -229,12 +220,13 @@ namespace Script.QR.OpenCV.Utils
 
                     N = getIntersectionPoint(M[1], M[2], O[3], O[2]);
 
-
                     src_mat.put(0, 0, L[0].x, L[0].y);
                     src_mat.put(1, 0, M[1].x, M[1].y);
                     src_mat.put(2, 0, N.x, N.y);
                     src_mat.put(3, 0, O[3].x, O[3].y);
 
+                    detectionPositionResult.Dispose();
+                    detectionPositionResult = new MatOfRect(createBoundingBox(L, M, N, O));
                     dst_mat.put(0, 0, 0, 0);
                     dst_mat.put(1, 0, qr.cols(), 0);
                     dst_mat.put(2, 0, qr.cols(), qr.rows());
@@ -243,25 +235,24 @@ namespace Script.QR.OpenCV.Utils
                     if (src_mat.rows() == 4 && dst_mat.rows() == 4
                     ) // Failsafe for WarpMatrix Calculation to have only 4 Points with src and dst
                     {
+                        found = true;
                         warp_matrix = Imgproc.getPerspectiveTransform(src_mat, dst_mat);
-                        Imgproc.warpPerspective(img, qr_raw, warp_matrix,
+                        Imgproc.warpPerspective(grayImg, qr_raw, warp_matrix,
                             new Size(Convert.ToDouble(qr.cols()), Convert.ToDouble(qr.rows())));
                         Core.copyMakeBorder(qr_raw, qr, 10, 10, 10, 10, Core.BORDER_CONSTANT,
                             new Scalar(255, 255, 255));
-
-                        Imgproc.cvtColor(qr, qr_gray, Imgproc.COLOR_RGB2GRAY);
-                        Imgproc.threshold(qr_gray, qr_thres, 127, 255, Imgproc.THRESH_BINARY);
+                        Imgproc.threshold(qr, qr_thres, 150, 255, Imgproc.THRESH_BINARY);
 
                         //threshold(qr_gray, qr_thres, 0, 255, CV_THRESH_OTSU);
                         //for( int d=0 ; d < 4 ; d++){	src.pop_back(); dst.pop_back(); }
                     }
 
                     //Draw contours on the image
-                    Imgproc.drawContours(img, contours, top, new Scalar(255, 200, 0), 2, 8, hierarchy, 0,
+                    Imgproc.drawContours(grayImg, contours, top, new Scalar(255, 200, 0), 2, 8, hierarchy, 0,
                         new Point());
-                    Imgproc.drawContours(img, contours, right, new Scalar(0, 0, 255), 2, 8, hierarchy, 0,
+                    Imgproc.drawContours(grayImg, contours, right, new Scalar(0, 0, 255), 2, 8, hierarchy, 0,
                         new Point());
-                    Imgproc.drawContours(img, contours, bottom, new Scalar(255, 0, 100), 2, 8, hierarchy, 0,
+                    Imgproc.drawContours(grayImg, contours, bottom, new Scalar(255, 0, 100), 2, 8, hierarchy, 0,
                         new Point());
                     // Insert Debug instructions here
                     if (DBG == 1)
@@ -309,8 +300,24 @@ namespace Script.QR.OpenCV.Utils
 
             return new Dictionary<int, Mat>()
             {
-                {FOUND, found ? new Mat() : null}, {QR, qr}, {TRACES, traces}, {RAW_INPUT, img}
+                {FOUND, found ? new Mat() : null}, {QR, qr_thres}, {TRACES, traces}, {RAW_INPUT, grayImg}
             };
+        }
+
+        private Rect createBoundingBox(List<Point> L, List<Point> M, Point N, List<Point> O)
+        {
+            Point topLeft = new Point(L[0].x, L[0].y);
+            Point topRight = new Point(M[1].x, M[1].y);
+            Point bottomRight = new Point(N.x, N.y);
+            Point bottomLeft = new Point(O[3].x, O[3].y);
+
+            Point[] points = new Point[4];
+            points[0] = topLeft;
+            points[1] = topRight;
+            points[2] = bottomRight;
+            points[3] = bottomLeft;
+
+            return Imgproc.boundingRect(new MatOfPoint(points));
         }
 
         // =============================== Helping methods ================================

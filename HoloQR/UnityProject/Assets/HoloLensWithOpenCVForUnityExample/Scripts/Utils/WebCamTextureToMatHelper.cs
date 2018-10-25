@@ -537,6 +537,7 @@ namespace HoloLensWithOpenCVForUnityExample
 
                     isInitWaiting = false;
                     hasInitDone = true;
+                    Debug.Log("WebCamTextureToMatHelper:: init done!");
                     initCoroutine = null;
 
                     if (onInitialized != null)
@@ -721,7 +722,7 @@ namespace HoloLensWithOpenCVForUnityExample
                 return (rotatedFrameMat != null) ? rotatedFrameMat : frameMat;
             }
                 
-            Utils.webCamTextureToMat (webCamTexture, frameMat, colors, false);
+            Utils.webCamTextureToMat (webCamTexture, frameMat, colors);
 
             #if !UNITY_EDITOR && !(UNITY_STANDALONE || UNITY_WEBGL)
             if (rotatedFrameMat != null) {

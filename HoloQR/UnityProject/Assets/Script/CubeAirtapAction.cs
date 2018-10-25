@@ -3,12 +3,12 @@ using UnityEngine;
 
 public class CubeAirtapAction : MonoBehaviour, IInputClickHandler
 {
-    public Placeholder placeholderScript;
+    public Scanner ScannerScript;
 
     #region IInputClickHandler
     public void OnInputClicked(InputClickedEventData eventData)
     {
-        placeholderScript.OnReset();
+        ScannerScript.OnReset();
         if (gameObject.GetComponent<MeshRenderer>().material.color != Color.red)
         {
             gameObject.GetComponent<MeshRenderer>().material.color = Color.red;

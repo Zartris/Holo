@@ -70,7 +70,6 @@ namespace HoloToolkit.UX.Dialog
             //Find all buttons on dialog bar two...
             List<DialogButton> buttonsOnDialogBar2 = GetAllDialogButtons("ButtonParent2");
 
-
             //set desired buttons active and the rest inactive
             SetButtonsActiveStates(buttonsOnDialogBar1, buttonTypes.Count > 2 ? 2 : buttonTypes.Count);
             SetButtonsActiveStates(buttonsOnDialogBar2, buttonTypes.Count <= 2 ? 0 : buttonTypes.Count - 2);

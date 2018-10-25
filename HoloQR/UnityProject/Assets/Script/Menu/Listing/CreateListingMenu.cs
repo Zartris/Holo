@@ -120,6 +120,12 @@ namespace Script.Menu.Listing
                 var uri = _result.ButtonLink[obj];
                 LoadUri(uri);
                 menu.State = MenuState.Closed;
+//                if(_result.ButtonNames[obj] == "Close")
+//                {
+                    GameObject qrm = GameObject.Find("/Managers/QRManager");
+                    Scanner scanner = qrm.GetComponent<Scanner>();
+                    scanner.dialogClosed();
+//                }
             }
         }
 
